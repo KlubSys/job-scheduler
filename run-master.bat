@@ -1,0 +1,1 @@
+P:\OpenJDK\jdk-11.0.15.10-hotspot\bin\java.exe -jar -Dspring.profiles.active=master,default -Dspring.server.port=8082 target/scheduler-0.0.1-SNAPSHOT.jar
