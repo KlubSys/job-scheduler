@@ -12,6 +12,8 @@ import com.klub.jobs.scheduler.model.dto.CreateJobInput;
 import com.klub.jobs.scheduler.model.entity.KlubJob;
 import com.klub.jobs.scheduler.repository.KlubJobRepositoryInterface;
 import com.klub.jobs.scheduler.service.KlubJobServiceInterface;
+import com.klub.jobs.scheduler.service.api.CentralLoggerServerApi;
+import com.klub.jobs.scheduler.service.api.dto.CentralServerLogMessage;
 import org.springframework.beans.factory.annotation.Autowired;
 import org.springframework.http.HttpStatus;
 import org.springframework.http.ResponseEntity;
@@ -31,19 +33,21 @@ public class JobController {
     private final KlubJobServiceInterface klubJobService;
     private final KlubJobRepositoryInterface klubJobRepository;
     private final ObjectMapper defaultMapper;
+    private final CentralLoggerServerApi centralLoggerServerApi;
 
     @Autowired
     public JobController(KlubJobServiceInterface klubJobService,
                          KlubJobRepositoryInterface klubJobRepository,
-                         ObjectMapper defaultMapper) {
+                         ObjectMapper defaultMapper, CentralLoggerServerApi centralLoggerServerApi) {
         this.klubJobService = klubJobService;
         this.klubJobRepository = klubJobRepository;
         this.defaultMapper = defaultMapper;
+        this.centralLoggerServerApi = centralLoggerServerApi;
     }
 
     @PostMapping
     ResponseEntity<Map<String, Object>> submitJob(@RequestBody SubmitJobRequest body)
-            throws ErrorOccurredException {
+            throws Exception {
         CreateJobInput input = new CreateJobInput();
         input.setJobInterval(body.getJobInterval());
         input.setJobType(input.getJobType());
@@ -51,9 +55,14 @@ public class JobController {
         input.setResultLocation(body.getResultLocation());
         input.setPayload(body.getPayload());
 
+        centralLoggerServerApi.dispatchLog(CentralServerLogMessage.builder()
+                .text("Creating Job").build());
+
         KlubJob job = klubJobService.createJob(input);
         Map<String, Object> response = new HashMap<>();
         response.put("job_id", job.getId());
+        centralLoggerServerApi.dispatchLog(CentralServerLogMessage.builder()
+                .text("Job Created " + job.getId() + " and scheduled").build());
 
         return new ResponseEntity<>(response, HttpStatus.OK);
     }
